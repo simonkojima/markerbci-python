@@ -5,7 +5,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setuptools.setup(
     name="markerbci",
-    version="0.0.3",
+    version="0.0.4",
     author="Simon Kojima",
     author_email="simon.kojima@outlook.com",
     description="Handling marker devices for brain-computer interfaces.",
