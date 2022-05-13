@@ -10,11 +10,135 @@ import sys
 import time
 import logging
 from . import utils # p23
+from threading import Thread
 
 # our buttonbox has id 0403:6001 from its UART IC
 # todo: add support for 2341:0001 (Arduino Uno)
 # make sure you have the pyusb module installed
 # for window you may need this: http://sourceforge.net/apps/trac/libusb-win32/wiki
+
+"""
+def serial_ports():
+     Lists serial port names
+
+        :raises EnvironmentError:
+            On unsupported or unknown platforms
+        :returns:
+            A list of the serial ports available on the system
+
+	import serial
+	import glob
+
+    if sys.platform.startswith('win'):
+        ports = ['COM%s' % (i + 1) for i in range(256)]
+    elif sys.platform.startswith('linux') or sys.platform.startswith('cygwin'):
+        # this excludes your current terminal "/dev/tty"
+        ports = glob.glob('/dev/tty[A-Za-z]*')
+    elif sys.platform.startswith('darwin'):
+        ports = glob.glob('/dev/tty.*')
+    else:
+        raise EnvironmentError('Unsupported platform')
+
+    result = []
+    for port in ports:
+        try:
+            s = serial.Serial(port)
+            s.close()
+            result.append(port)
+        except (OSError, serial.SerialException):
+            pass
+    return result
+"""
+
+class ButtonBoxBci(object):
+	def __init__(self, id=0, port=None, max_attempt=None):
+		if max_attempt is None:
+			max_attempt = float('inf')
+		
+		if port is None:
+			ports = list()
+			for m in range(1,10):
+				ports.append("COM" + str(m))
+		else:
+			ports = [port]
+
+		attemped_cnt = 0
+		finish = False
+		while finish is False:
+			for port in ports:
+				self._port = utils.getPort(id, port)
+				self._device = None
+				self._maxWait = None # overrides maxWait in waitButtons
+				if not self._port:
+					raise Exception("No USB serial device connected, could not get port name.")
+				self._device, idString = utils.open(self._port)
+				# idString may contain the rrormessage, for instance "USB serial timeout"
+				if not self._device:
+					logging.critical("No BITSI buttonbox connected, could not connect to port %s", self._port)
+				elif idString.startswith("BITSI mode, Ready!") or idString.startswith("BITSI event mode, Ready!"):
+					logging.debug("Device is a BITSI buttonbox (%d): %s", len(idString), idString)
+					print("Device Connected")
+					finish = True
+					break
+				else:
+					logging.error("Device is NOT a BITSI buttonbox (%d): %s", len(idString), idString)
+					print("Device Connected")
+					finish = True
+					break
+			attemped_cnt += 1
+			if attemped_cnt > max_attempt:
+				logging.error("Could not connect to buttonbox. terminate")
+				sys.exit()
+
+	def close(self, pause = 1):
+		"""
+		Close serial connection to buttonbox
+		"""
+		time.sleep(pause)
+		if self._device:
+			self._device.close()
+		time.sleep(pause)
+
+	def sendMarker(self,markers=None, val=None, marker_duration = 0.05):
+		self._send_buttonbox(val, marker_duration)
+
+	def _send_buttonbox(self, val, marker_duration):
+		marker_thread = Thread(target=self._send_buttonbox_thread, args=(val,marker_duration))
+		marker_thread.start()
+
+	def _send_buttonbox_thread(self, val, marker_duration):
+		self._sendMarker(val=val)
+		time.sleep(marker_duration)
+		self._sendMarker(val=0)
+
+	def _sendMarker(self, markers=None, val=None):
+		"""
+		Mutatis Mutandis identical to setLeds()
+		"""
+		return self.setLeds(leds=markers, val=val)
+
+	def setLeds(self, leds=None, val=None):
+		"""
+		Set buttonbox LEDs to a certain pattern
+		"""
+		if self._device is None:
+			raise Exception("No buttonbox connected")
+		if leds is None:
+			leds = [False, False, False, False, False, False, False, False]
+		if val is None:
+			val = 0
+			for i in range(8):
+				if len(leds) > i:
+					if leds[i]:
+						val += 1<<i
+				else:
+					break
+		#self._device.write(chr(val))
+		#self._device.write(bytes([val])) #p23, list instead of tuple in 0.8.2
+		if sys.version_info >= (3, 0): #0.8.2
+			self._device.write(bytes([val]))
+		else:
+			self._device.write(chr(val))
 
 class Buttonbox(object):
 	"""
