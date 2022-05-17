@@ -1,1 +1,1 @@
-from .buttonbox import *
+from . import buttonbox

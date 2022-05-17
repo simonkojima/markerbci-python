@@ -5,7 +5,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setuptools.setup(
     name="markerbci",
-    version="0.0.4",
+    version="0.0.5",
     author="Simon Kojima",
     author_email="simon.kojima@outlook.com",
     description="Handling marker devices for brain-computer interfaces.",
@@ -24,5 +24,5 @@ setuptools.setup(
     ],
     package_dir={"": "src"},
     packages=setuptools.find_packages(where="src"),
-    python_requires=">=3.6",
+    python_requires=">=2.6",
 )
