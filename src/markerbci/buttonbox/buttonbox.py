@@ -11,7 +11,7 @@ import time
 import logging
 from . import utils # p23
 from threading import Thread
-
+logger = logging.getLogger('markerbci.'+__name__)
 # our buttonbox has id 0403:6001 from its UART IC
 # todo: add support for 2341:0001 (Arduino Uno)
 # make sure you have the pyusb module installed
