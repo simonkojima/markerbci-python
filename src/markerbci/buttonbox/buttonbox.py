@@ -51,7 +51,7 @@ def serial_ports():
 """
 
 class ButtonBoxBci(object):
-	def __init__(self, id=0, port=None, max_attempt=None):
+	def __init__(self, id=0, port=None, max_attempt=None, time_tick = 1):
 		if max_attempt is None:
 			max_attempt = float('inf')
 		
@@ -89,6 +89,7 @@ class ButtonBoxBci(object):
 			if attemped_cnt > max_attempt:
 				logging.error("Could not connect to buttonbox. terminate")
 				sys.exit()
+			time.sleep(time_tick)
 
 	def close(self, pause = 1):
 		"""
